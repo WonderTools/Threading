@@ -10,14 +10,26 @@ namespace WhatIsSemaphore
         private const int QueueLimit = 4;
 
         static Queue<String> _stockHolder = new Queue<String>(QueueLimit);
-        static Semaphore _semaphore = new Semaphore(0, QueueLimit);
+        static Semaphore _semaphoreForQueueItem;
+        static Semaphore _semaphoreForQueueSlot;
 
         static void Main(string[] args)
         {
+            Test();
+        }
+
+        private static void Test()
+        {
+            _semaphoreForQueueItem = new Semaphore(0, QueueLimit);
+            _semaphoreForQueueSlot = new Semaphore(QueueLimit, QueueLimit);
             Thread t1 = new Thread(Produce100Strings);
             t1.Start();
             Thread t2 = new Thread(ConsumeAndPrint100Strings);
             t2.Start();
+            t1.Join();
+            t2.Join();
+            _semaphoreForQueueItem.Dispose();
+            _semaphoreForQueueSlot.Dispose();
         }
 
         private static void ConsumeAndPrint100Strings()
@@ -31,11 +43,14 @@ namespace WhatIsSemaphore
 
         private static string GetString()
         {
-            _semaphore.WaitOne();
+            string result = String.Empty;
+            _semaphoreForQueueItem.WaitOne();
             lock (_stockHolder)
             {
-                return _stockHolder.Dequeue();
+                result = _stockHolder.Dequeue();
             }
+            _semaphoreForQueueSlot.Release();
+            return result;
         }
 
 
@@ -55,22 +70,12 @@ namespace WhatIsSemaphore
 
         private static void Queue(string produce)
         {
-            while (true)
+            _semaphoreForQueueSlot.WaitOne();
+            lock (_stockHolder)
             {
-                try
-                {
-                    _semaphore.Release();
-                    lock (_stockHolder)
-                    {
-                        _stockHolder.Enqueue(produce);
-                    }
-                    return;
-                }
-                catch (SemaphoreFullException e)
-                {
-                    Console.WriteLine("Queue is full. Waiting");
-                }
+                _stockHolder.Enqueue(produce);
             }
+            _semaphoreForQueueItem.Release();
         }
     }
 }
