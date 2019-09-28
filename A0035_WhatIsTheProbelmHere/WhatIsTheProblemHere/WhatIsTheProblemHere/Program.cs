@@ -7,10 +7,10 @@ namespace WhatIsTheProblemHere
     {
         static void Main(string[] args)
         {
-            Thread t1 = new Thread(() => PrintDownTriangle(5));
-            Thread t2 = new Thread(() => PrintUpTriangle(5));
+            Thread t1 = new Thread(() => PrintUpTriangleNTimes(5, 10));
+            Thread t2 = new Thread(() => PrintDownTriangleNTimes(5, 10));
 
-            //Comment one of the options
+            //Always keep one option commented
             //Option1(t1, t2);
             Option2(t1, t2);
 
@@ -36,13 +36,23 @@ namespace WhatIsTheProblemHere
                 for (int j = i; j < length; j++)
                 {
                     Console.Write("o");
-                    Thread.Sleep(400);
+                    MinorDelay();
                 }
 
                 Console.WriteLine();
             }
         }
 
+
+        private static void PrintUpTriangleNTimes(int length, int n)
+        {
+            for(int i = 0; i < n ;i++) PrintUpTriangle(length);
+        }
+
+        private static void PrintDownTriangleNTimes(int length, int n)
+        {
+            for (int i = 0; i < n; i++) PrintDownTriangle(length);
+        }
 
         private static void PrintUpTriangle(int length)
         {
@@ -51,11 +61,22 @@ namespace WhatIsTheProblemHere
                 for (int j = 0; j < i; j++)
                 {
                     Console.Write(".");
-                    Thread.Sleep(700);
+                    MinorDelay();
                 }
 
                 Console.WriteLine();
             }
         }
+
+        private static void MinorDelay()
+        {
+            int j = 0;
+            for (int i = 0; i < 10000; i++)
+            {
+                j++;
+            }
+        }
     }
+
+    
 }
