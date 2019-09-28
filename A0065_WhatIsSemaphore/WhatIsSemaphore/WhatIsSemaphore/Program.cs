@@ -1,48 +1,39 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 
-namespace WhatIsProducerConsumerProblem
+namespace WhatIsSemaphore
 {
     class Program
     {
         private const int QueueLimit = 4;
 
         static Queue<String> _stockHolder = new Queue<String>(QueueLimit);
+        static Semaphore _semaphore = new Semaphore(0, QueueLimit);
+
         static void Main(string[] args)
         {
             Thread t1 = new Thread(Produce100Strings);
             t1.Start();
             Thread t2 = new Thread(ConsumeAndPrint100Strings);
             t2.Start();
-
-
         }
 
         private static void ConsumeAndPrint100Strings()
         {
-            for(int i = 0; i < 100; )
+            for (int i = 0; i < 100; i++)
             {
-                string s = GetStringOrNull();
-                if (s == null)
-                {
-                    Console.WriteLine("Waiting as the queue is empty");
-                    Thread.Sleep(400);
-                }
-                else
-                {
-                    Console.WriteLine($"S.No. {i} -> {s}");
-                    i++;
-                }
+                string s = GetString();
+                Console.WriteLine($"S.No. {i} -> {s}");
             }
         }
 
-        private static string GetStringOrNull()
+        private static string GetString()
         {
+            _semaphore.WaitOne();
             lock (_stockHolder)
             {
-                if (_stockHolder.Count == 0) return null;
                 return _stockHolder.Dequeue();
             }
         }
@@ -58,22 +49,28 @@ namespace WhatIsProducerConsumerProblem
                 char[] charArray = new char[randomNumber];
                 for (int j = 0; j < randomNumber; j++) charArray[j] = char.Parse(j.ToString());
                 var produce = new String(charArray);
-                while (!TryQueue(produce))
-                {
-                    Console.WriteLine("Queue is full so waiting...");
-                    Thread.Sleep(100);
-                }
+                Queue(produce);
             }
         }
 
-        private static bool TryQueue(string produce)
+        private static void Queue(string produce)
         {
-            lock (_stockHolder)
+            while (true)
             {
-                if (_stockHolder.Count >= QueueLimit) return false;
-                _stockHolder.Enqueue(produce);
-                return true;
+                try
+                {
+                    _semaphore.Release();
+                    lock (_stockHolder)
+                    {
+                        _stockHolder.Enqueue(produce);
+                    }
+                    return;
+                }
+                catch (SemaphoreFullException e)
+                {
+                    Console.WriteLine("Queue is full. Waiting");
+                }
             }
         }
-    }    
+    }
 }
