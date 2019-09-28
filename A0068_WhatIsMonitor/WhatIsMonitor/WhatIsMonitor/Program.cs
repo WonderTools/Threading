@@ -9,8 +9,6 @@ namespace WhatIsMonitor
         private const int QueueLimit = 4;
 
         static Queue<String> _stockHolder = new Queue<String>(QueueLimit);
-        static Semaphore _semaphoreForQueueItem;
-        static Semaphore _semaphoreForQueueSlot;
 
         static void Main(string[] args)
         {
@@ -19,16 +17,12 @@ namespace WhatIsMonitor
 
         private static void Test()
         {
-            _semaphoreForQueueItem = new Semaphore(0, QueueLimit);
-            _semaphoreForQueueSlot = new Semaphore(QueueLimit, QueueLimit);
             Thread t1 = new Thread(Produce100Strings);
             t1.Start();
             Thread t2 = new Thread(ConsumeAndPrint100Strings);
             t2.Start();
             t1.Join();
             t2.Join();
-            _semaphoreForQueueItem.Dispose();
-            _semaphoreForQueueSlot.Dispose();
         }
 
         private static void ConsumeAndPrint100Strings()
@@ -43,12 +37,13 @@ namespace WhatIsMonitor
         private static string GetString()
         {
             string result = String.Empty;
-            _semaphoreForQueueItem.WaitOne();
+
             lock (_stockHolder)
             {
+                if (_stockHolder.Count == 0) Monitor.Wait(_stockHolder);
                 result = _stockHolder.Dequeue();
+                Monitor.Pulse(_stockHolder);
             }
-            _semaphoreForQueueSlot.Release();
             return result;
         }
 
@@ -69,12 +64,12 @@ namespace WhatIsMonitor
 
         private static void Queue(string produce)
         {
-            _semaphoreForQueueSlot.WaitOne();
             lock (_stockHolder)
             {
+                if (_stockHolder.Count >= QueueLimit) Monitor.Wait(_stockHolder);
                 _stockHolder.Enqueue(produce);
+                Monitor.Pulse(_stockHolder);
             }
-            _semaphoreForQueueItem.Release();
         }
     }
 }
