@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,41 +17,43 @@ namespace WhatIsDiffBetweenTaskAndThread
 
         private static async Task AsyncMain()
         {
-            var t1 = Task.Run(async () => { await PingAWebPage100Times("https://non-1.com"); });
-            var t2 = Task.Run(async () => { await PingAWebPage100Times("https://non-2.com"); });
-            var t3 = Task.Run(async () => { await PingAWebPage100Times("https://non-3.com"); });
-            var t4 = Task.Run(async () => { await PingAWebPage100Times("https://non-4.com"); });
-            var t5 = Task.Run(async () => { await PingAWebPage100Times("https://non-5.com"); });
-            var t6 = Task.Run(async () => { await PingAWebPage100Times("https://non-6.com"); });
-            var t7 = Task.Run(async () => { await PingAWebPage100Times("https://non-7.com"); });
-            var t8 = Task.Run(async () => { await PingAWebPage100Times("https://non-8.com"); });
-            var t9 = Task.Run(async () => { await PingAWebPage100Times("https://non-9.com"); });
-            var t10 = Task.Run(async () => { await PingAWebPage100Times("https://non-10.com"); });
+            var urls = new List<string>()
+            {
+                "https://non-1.com",
+                "https://non-2.com",
+                "https://non-3.com",
+                "https://non-4.com",
+                "https://non-5.com",
+                "https://non-6.com",
+                "https://non-7.com",
+                "https://non-8.com",
+                "https://non-9.com",
+                "https://non-10.com",
+            };
 
-            await t1;
-            await t2;
-            await t3;
-            await t4;
-            await t5;
-            await t6;
-            await t7;
-            await t8;
-            await t9;
-            await t10;
+            var tasks = urls.Select(url => Task.Run(() => { PingAWebPageNTimes(url); })).ToList();
+            foreach (var task in tasks)
+            {
+                await task;
+            }
 
+            var newTasks = urls.Select(url => Task.Run(() => { PingAWebPageNTimes(url); })).ToList();
+            foreach (var task in newTasks)
+            {
+                await task;
+            }
         }
 
-        static async Task PingAWebPage100Times(string s)
+        static void PingAWebPageNTimes(string s)
         {
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 10; i++)
             {
                 HttpClient client = new HttpClient();
                 try
                 {
                     var threadId = Thread.CurrentThread.ManagedThreadId;
                     Console.WriteLine($"ThreadId:{threadId},S.No:{i},url:{s},status:Initiated");
-                    //var x = client.GetAsync(s).Result;
-                    await client.GetAsync(s);
+                    var x = client.GetAsync(s).Result;
                 }
                 catch (Exception e)
                 {
