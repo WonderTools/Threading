@@ -12,11 +12,6 @@ namespace WhatIsDiffBetweenTaskAndThread
     {
         static void Main(string[] args)
         {
-            AsyncMain().Wait();
-        }
-
-        private static async Task AsyncMain()
-        {
             var urls = new List<string>()
             {
                 "https://non-1.com",
@@ -31,16 +26,40 @@ namespace WhatIsDiffBetweenTaskAndThread
                 "https://non-10.com",
             };
 
-            var tasks = urls.Select(url => Task.Run(() => { PingAWebPageNTimes(url); })).ToList();
-            foreach (var task in tasks)
-            {
-                await task;
-            }
+            //Run one of the experiments at a time
+            //TaskExperiment(urls);
+            ThreadExperiment(urls);
+        }
 
-            var newTasks = urls.Select(url => Task.Run(() => { PingAWebPageNTimes(url); })).ToList();
-            foreach (var task in newTasks)
+        private static void TaskExperiment(List<string> urls)
+        {
+            RunAllTasksToFinish(urls);
+            RunAllTasksToFinish(urls);
+        }
+
+        private static void RunAllTasksToFinish(List<string> urls)
+        {
+            var tasks = urls.Select(url => Task.Run(() => { PingAWebPageNTimes(url); })).ToList();
+            Task.WaitAll(tasks.ToArray());
+        }
+
+        private static void ThreadExperiment(List<string> urls)
+        {
+            RullAllThreadsToFinish(urls);
+            RullAllThreadsToFinish(urls);
+        }
+
+        private static void RullAllThreadsToFinish(List<string> urls)
+        {
+            var threads = urls.Select(url =>
             {
-                await task;
+                Thread t = new Thread(() => PingAWebPageNTimes(url));
+                t.Start();
+                return t;
+            }).ToList();
+            foreach (var thread in threads)
+            {
+                thread.Join();
             }
         }
 
